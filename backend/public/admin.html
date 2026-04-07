@@ -46,34 +46,37 @@
             onclick="showSection('dashboard')"
             id="nav-dashboard"
             class="nav-link active"
-            ><i class="bi bi-speedometer2 me-2"></i> Products List</a
           >
+            <i class="bi bi-speedometer2 me-2"></i> Products List
+          </a>
         </li>
         <li>
-          <a onclick="showSection('users')" id="nav-users" class="nav-link"
-            ><i class="bi bi-people me-2"></i> Users Management</a
-          >
+          <a onclick="showSection('users')" id="nav-users" class="nav-link">
+            <i class="bi bi-people me-2"></i> Users Management
+          </a>
         </li>
         <li>
           <a
             onclick="showSection('add-product')"
             id="nav-add-product"
             class="nav-link"
-            ><i class="bi bi-plus-circle me-2"></i> Add Product</a
           >
+            <i class="bi bi-plus-circle me-2"></i> Add Product
+          </a>
         </li>
         <li>
           <a
             onclick="showSection('categories')"
             id="nav-categories"
             class="nav-link"
-            ><i class="bi bi-tags me-2"></i> Categories</a
           >
+            <i class="bi bi-tags me-2"></i> Categories
+          </a>
         </li>
         <li>
-          <a onclick="showSection('brands')" id="nav-brands" class="nav-link"
-            ><i class="bi bi-award me-2"></i> Brands</a
-          >
+          <a onclick="showSection('brands')" id="nav-brands" class="nav-link">
+            <i class="bi bi-award me-2"></i> Brands
+          </a>
         </li>
       </ul>
     </div>
@@ -122,7 +125,12 @@
       </div>
 
       <div id="section-users" class="hidden">
-        <h4>User Management</h4>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h4>User Management</h4>
+          <button class="btn btn-primary" onclick="openCreateUserModal()">
+            <i class="bi bi-person-plus me-2"></i>Add New User
+          </button>
+        </div>
         <div class="card p-4 shadow-sm border-0">
           <div class="table-responsive">
             <table class="table table-hover align-middle">
@@ -179,7 +187,8 @@
                   class="form-check-input"
                   type="checkbox"
                   id="pTrending"
-                /><label class="form-check-label">Trending Product 🔥</label>
+                />
+                <label class="form-check-label">Trending Product 🔥</label>
               </div>
             </div>
           </div>
@@ -221,12 +230,6 @@
             </div>
           </div>
           <table class="table table-hover">
-            <thead class="table-light">
-              <tr>
-                <th>Name</th>
-                <th class="text-end">Actions</th>
-              </tr>
-            </thead>
             <tbody id="category-table-body"></tbody>
           </table>
         </div>
@@ -251,12 +254,6 @@
             </div>
           </div>
           <table class="table table-hover">
-            <thead class="table-light">
-              <tr>
-                <th>Name</th>
-                <th class="text-end">Actions</th>
-              </tr>
-            </thead>
             <tbody id="brand-table-body"></tbody>
           </table>
         </div>
@@ -278,9 +275,55 @@
         </div>
         <div class="d-flex gap-2">
           <button onclick="updateUser()" class="btn btn-primary w-100">
-            Save</button
-          ><button
+            Save
+          </button>
+          <button
             onclick="closeUserModal()"
+            class="btn btn-outline-secondary w-100"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="createUserModal" class="modal-overlay hidden">
+      <div class="modal-content-custom shadow">
+        <h5>Create New User</h5>
+        <hr />
+        <div class="mb-3">
+          <label>Full Name</label
+          ><input
+            type="text"
+            id="newUserName"
+            class="form-control"
+            placeholder="Enter name"
+          />
+        </div>
+        <div class="mb-3">
+          <label>Email Address</label
+          ><input
+            type="email"
+            id="newUserEmail"
+            class="form-control"
+            placeholder="Enter email"
+          />
+        </div>
+        <div class="mb-3">
+          <label>Password</label
+          ><input
+            type="password"
+            id="newUserPassword"
+            class="form-control"
+            placeholder="Enter password"
+          />
+        </div>
+        <div class="d-flex gap-2 mt-4">
+          <button onclick="createNewUser()" class="btn btn-primary w-100">
+            Create Account
+          </button>
+          <button
+            onclick="closeCreateUserModal()"
             class="btn btn-outline-secondary w-100"
           >
             Cancel

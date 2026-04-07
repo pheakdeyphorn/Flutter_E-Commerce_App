@@ -4,7 +4,7 @@ const {
   registerUser,
   loginUser,
   getAllUsers,
-  deleteProduct,
+  deleteUser,
   getUserProfile,
   updateUserProfile,
 } = require("../controllers/authController");
@@ -12,7 +12,7 @@ const {
 router.post("/register", registerUser);
 router.post("/login", loginUser);
 router.get("/users", getAllUsers);
-router.delete("/:id", deleteProduct);
+router.delete("/:id", deleteUser);
 router.get("/profile/:id", getUserProfile);
 router.put("/update/:id", updateUserProfile);
 

@@ -86,8 +86,8 @@ async function addProduct() {
     });
 
     if (res.ok) {
-      alert(id ? "Product updated!" : "Product added successfully!"); // Optional: Feedback
-      resetProductForm(); // This call is critical
+      alert(id ? "Product updated!" : "Product added successfully!");
+      resetProductForm();
       fetchProducts();
       showSection("dashboard");
     }
@@ -113,24 +113,15 @@ function prepEdit(id) {
 }
 
 function resetProductForm() {
-  // Clear Hidden ID
   document.getElementById("pId").value = "";
-
-  // Clear Text and Number Inputs
   document.getElementById("pName").value = "";
   document.getElementById("pPrice").value = "";
   document.getElementById("pStock").value = "";
   document.getElementById("pImage").value = "";
   document.getElementById("pDesc").value = "";
-
-  // Reset Dropdowns to first option
   document.getElementById("pCategory").selectedIndex = 0;
   document.getElementById("pBrand").selectedIndex = 0;
-
-  // Reset Toggle/Checkbox
   document.getElementById("pTrending").checked = false;
-
-  // Reset UI Buttons
   document.getElementById("btn-product-action").innerText = "Save Product";
   document.getElementById("btn-cancel-edit").classList.add("hidden");
 }
@@ -142,7 +133,7 @@ async function deleteProduct(id) {
   }
 }
 
-// --- USER MANAGEMENT ---
+// --- USER MANAGEMENT (UPDATED) ---
 async function fetchUsers() {
   const res = await fetch(`${API_BASE}/auth/users`);
   const users = await res.json();
@@ -161,6 +152,46 @@ async function fetchUsers() {
     `,
     )
     .join("");
+}
+
+function openCreateUserModal() {
+  document.getElementById("createUserModal").classList.remove("hidden");
+}
+function closeCreateUserModal() {
+  document.getElementById("createUserModal").classList.add("hidden");
+  document.getElementById("newUserName").value = "";
+  document.getElementById("newUserEmail").value = "";
+  document.getElementById("newUserPassword").value = "";
+}
+
+async function createNewUser() {
+  const name = document.getElementById("newUserName").value;
+  const email = document.getElementById("newUserEmail").value;
+  const password = document.getElementById("newUserPassword").value;
+
+  if (!name || !email || !password) {
+    alert("សូមបំពេញព័ត៌មានឱ្យបានគ្រប់គ្រាន់!");
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, password }),
+    });
+
+    if (res.ok) {
+      alert("បង្កើតគណនីជោគជ័យ!");
+      closeCreateUserModal();
+      fetchUsers();
+    } else {
+      const error = await res.json();
+      alert("បរាជ័យ: " + (error.message || "មានបញ្ហាអ្វីមួយ"));
+    }
+  } catch (err) {
+    console.error("Create user error:", err);
+  }
 }
 
 function prepEditUser(id, name, email) {
@@ -189,12 +220,24 @@ async function updateUser() {
 
 async function deleteUser(id) {
   if (confirm("លុបអ្នកប្រើប្រាស់នេះ?")) {
-    await fetch(`${API_BASE}/auth/${id}`, { method: "DELETE" });
-    fetchUsers();
+    try {
+      const res = await fetch(`${API_BASE}/auth/${id}`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        alert("លុបបានជោគជ័យ!");
+        fetchUsers(); // ហៅមកបង្ហាញបញ្ជីថ្មីឡើងវិញ
+      } else {
+        alert("មិនអាចលុបបានទេ!");
+      }
+    } catch (err) {
+      console.error("Delete user error:", err);
+    }
   }
 }
 
-// --- CATEGORY & BRAND ---
+// --- CATEGORY & BRAND (REMAINING FUNCTIONS) ---
 async function addCategory() {
   const name = document.getElementById("newCatName").value;
   await fetch(`${API_BASE}/categories`, {
@@ -257,7 +300,6 @@ async function loadDropdowns() {
   ]);
   const cats = await catRes.json();
   const brands = await brandRes.json();
-
   document.getElementById("pCategory").innerHTML = cats
     .map((c) => `<option value="${c._id}">${c.name}</option>`)
     .join("");

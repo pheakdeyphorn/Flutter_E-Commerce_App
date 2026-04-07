@@ -68,12 +68,19 @@ exports.getAllUsers = async (req, res) => {
   }
 };
 
-exports.deleteProduct = async (req, res) => {
+// លុប User ចេញពី Database
+exports.deleteUser = async (req, res) => {
   try {
-    await Product.findByIdAndDelete(req.params.id);
-    res.status(200).json({ message: "Product deleted" });
+    const user = await User.findById(req.params.id);
+
+    if (user) {
+      await User.findByIdAndDelete(req.params.id);
+      res.status(200).json({ message: "User deleted successfully" });
+    } else {
+      res.status(404).json({ message: "User not found" });
+    }
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: "Server Error", error: err.message });
   }
 };
 
