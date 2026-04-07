@@ -5,8 +5,9 @@ class Product {
   final double price;
   final String imageUrl;
   final String category;
+  final String brand; // បន្ថែមត្រង់នេះ
   final int stockCount;
-  final bool isTrending; // New
+  final bool isTrending;
   final double oldPrice;
 
   Product({
@@ -16,21 +17,26 @@ class Product {
     required this.price,
     required this.imageUrl,
     required this.category,
+    required this.brand, // បន្ថែមត្រង់នេះ
     required this.stockCount,
-    required this.isTrending, // New
+    required this.isTrending,
     required this.oldPrice,
   });
 
-  // This "Factory" constructor converts your MongoDB JSON into a Flutter Object
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
-      id: json['_id'], // MongoDB uses _id
+      id: json['_id'],
       name: json['name'],
       description: json['description'] ?? '',
-      price: (json['price'] as num)
-          .toDouble(), // Ensures it handles integers or doubles
+      price: (json['price'] as num).toDouble(),
       imageUrl: json['image_url'] ?? '',
-      category: json['category'] ?? 'Other',
+      // Support ទាំងទម្រង់ String (ចាស់) និង Object (ថ្មី)
+      category: json['category'] is Map
+          ? json['category']['name']
+          : (json['category'] ?? 'Other'),
+      brand: json['brand'] is Map
+          ? json['brand']['name']
+          : (json['brand'] ?? 'Unknown'), // បន្ថែមត្រង់នេះ
       stockCount: json['stock_count'] ?? 0,
       isTrending: json['is_trending'] ?? false,
       oldPrice: (json['old_price'] as num?)?.toDouble() ?? 0.0,

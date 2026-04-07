@@ -33,12 +33,19 @@ class _SearchScreenState extends State<SearchScreen> {
   Future<void> _loadData() async {
     try {
       final products = await ApiService.fetchProducts();
+
+      // ឆែកមើលថា តើ Widget នេះនៅបង្ហាញលើ Screen (mounted) ឬអត់?
+      if (!mounted) return;
+
       setState(() {
         _allProduct = products;
         _displayList = products;
         _isLoading = false;
       });
     } catch (error) {
+      // ឆែក mounted ត្រង់ផ្នែក Error ផងដែរ
+      if (!mounted) return;
+
       setState(() {
         _isLoading = false;
       });

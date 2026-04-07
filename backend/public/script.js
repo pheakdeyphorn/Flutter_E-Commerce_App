@@ -1,73 +1,60 @@
-const API_BASE = "http://localhost:5001/api";
+const API_BASE = "http://localhost:5002/api";
 let allProducts = [];
+
+document.addEventListener("DOMContentLoaded", () => {
+  fetchProducts();
+  loadDropdowns();
+  loadCategoryTable();
+  loadBrandTable();
+});
 
 // --- NAVIGATION ---
 function showSection(sectionId) {
-  document.getElementById("section-dashboard").classList.add("hidden");
-  document.getElementById("section-users").classList.add("hidden");
-  document.getElementById("section-products").classList.add("hidden");
-
-  document
-    .querySelectorAll(".nav-link")
-    .forEach((l) => l.classList.remove("active"));
-
-  document.getElementById("section-" + sectionId).classList.remove("hidden");
-  document.getElementById("nav-" + sectionId).classList.add("active");
+  const sections = [
+    "dashboard",
+    "add-product",
+    "categories",
+    "brands",
+    "users",
+  ];
+  sections.forEach((id) => {
+    document.getElementById(`section-${id}`).classList.add("hidden");
+    const navLink = document.getElementById(`nav-${id}`);
+    if (navLink) navLink.classList.remove("active");
+  });
+  document.getElementById(`section-${sectionId}`).classList.remove("hidden");
+  const activeNav = document.getElementById(`nav-${sectionId}`);
+  if (activeNav) activeNav.classList.add("active");
 
   if (sectionId === "users") fetchUsers();
-  if (sectionId === "products") fetchProducts();
 }
 
-// --- USER ACTIONS ---
-async function fetchUsers() {
-  const res = await fetch(`${API_BASE}/auth/users`);
-  const users = await res.json();
-  document.getElementById("user-list").innerHTML = users
-    .map(
-      (u) => `
-        <tr><td>${u.name}</td><td>${u.email}</td><td>$${u.wallet_balance.toFixed(2)}</td></tr>
-    `,
-    )
-    .join("");
-}
-
-async function addUser() {
-  const data = {
-    name: document.getElementById("uName").value,
-    email: document.getElementById("uEmail").value,
-    password: document.getElementById("uPass").value,
-  };
-  const res = await fetch(`${API_BASE}/auth/register`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
-  if (res.ok) {
-    alert("User Added!");
-    location.reload();
+// --- PRODUCT MANAGEMENT ---
+async function fetchProducts() {
+  try {
+    const res = await fetch(`${API_BASE}/products`);
+    allProducts = await res.json();
+    displayProducts(allProducts);
+  } catch (err) {
+    console.error(err);
   }
 }
 
-// --- PRODUCT ACTIONS ---
-async function fetchProducts() {
-  const res = await fetch(`${API_BASE}/products`);
-  allProducts = await res.json();
-  renderProducts(allProducts);
-}
-
-function renderProducts(data) {
-  document.getElementById("product-list").innerHTML = data
+function displayProducts(products) {
+  const tbody = document.getElementById("product-list");
+  tbody.innerHTML = products
     .map(
       (p) => `
         <tr>
-            <td><img src="${p.image_url}" width="45" height="45"></td>
-            <td>${p.name}</td>
-            <td><span class="badge bg-secondary">${p.category}</span></td>
+            <td><img src="${p.image_url}" width="40" height="40" class="rounded"></td>
+            <td><strong>${p.name}</strong></td>
+            <td><span class="badge bg-info text-dark">${p.brand ? p.brand.name : "-"}</span></td>
+            <td><span class="badge bg-secondary">${p.category ? p.category.name : "-"}</span></td>
             <td>$${p.price.toFixed(2)}</td>
             <td>${p.stock_count}</td>
             <td class="text-end">
-                <button class="btn btn-sm btn-outline-primary me-1" onclick="prepEdit('${p._id}')"><i class="bi bi-pencil"></i></button>
-                <button class="btn btn-sm btn-outline-danger" onclick="deleteProduct('${p._id}')"><i class="bi bi-trash"></i></button>
+                <button class="btn btn-sm btn-light" onclick="prepEdit('${p._id}')"><i class="bi bi-pencil"></i></button>
+                <button class="btn btn-sm btn-light text-danger" onclick="deleteProduct('${p._id}')"><i class="bi bi-trash"></i></button>
             </td>
         </tr>
     `,
@@ -75,22 +62,13 @@ function renderProducts(data) {
     .join("");
 }
 
-function filterProducts() {
-  const q = document.getElementById("pSearch").value.toLowerCase();
-  const cat = document.getElementById("pFilterCategory").value;
-  const filtered = allProducts.filter(
-    (p) =>
-      p.name.toLowerCase().includes(q) && (cat === "All" || p.category === cat),
-  );
-  renderProducts(filtered);
-}
-
 async function addProduct() {
   const id = document.getElementById("pId").value;
-  const data = {
+  const productData = {
     name: document.getElementById("pName").value,
     price: parseFloat(document.getElementById("pPrice").value),
     category: document.getElementById("pCategory").value,
+    brand: document.getElementById("pBrand").value,
     stock_count: parseInt(document.getElementById("pStock").value),
     image_url: document.getElementById("pImage").value,
     description: document.getElementById("pDesc").value,
@@ -100,41 +78,204 @@ async function addProduct() {
   const url = id ? `${API_BASE}/products/${id}` : `${API_BASE}/products`;
   const method = id ? "PUT" : "POST";
 
-  const res = await fetch(url, {
-    method: method,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
+  try {
+    const res = await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(productData),
+    });
 
-  if (res.ok) {
-    alert(id ? "Product Updated!" : "Product Created!");
-    location.reload();
-  }
-}
-
-async function deleteProduct(id) {
-  if (confirm("Delete this product?")) {
-    await fetch(`${API_BASE}/products/${id}`, { method: "DELETE" });
-    fetchProducts();
+    if (res.ok) {
+      alert(id ? "Product updated!" : "Product added successfully!"); // Optional: Feedback
+      resetProductForm(); // This call is critical
+      fetchProducts();
+      showSection("dashboard");
+    }
+  } catch (err) {
+    console.error("Error saving product:", err);
   }
 }
 
 function prepEdit(id) {
   const p = allProducts.find((x) => x._id === id);
-  showSection("dashboard");
+  showSection("add-product");
   document.getElementById("pId").value = p._id;
   document.getElementById("pName").value = p.name;
   document.getElementById("pPrice").value = p.price;
-  document.getElementById("pCategory").value = p.category;
   document.getElementById("pStock").value = p.stock_count;
+  document.getElementById("pCategory").value = p.category ? p.category._id : "";
+  document.getElementById("pBrand").value = p.brand ? p.brand._id : "";
   document.getElementById("pImage").value = p.image_url;
   document.getElementById("pDesc").value = p.description || "";
   document.getElementById("pTrending").checked = p.is_trending;
-
   document.getElementById("btn-product-action").innerText = "Update Product";
   document.getElementById("btn-cancel-edit").classList.remove("hidden");
 }
 
 function resetProductForm() {
-  location.reload();
+  // Clear Hidden ID
+  document.getElementById("pId").value = "";
+
+  // Clear Text and Number Inputs
+  document.getElementById("pName").value = "";
+  document.getElementById("pPrice").value = "";
+  document.getElementById("pStock").value = "";
+  document.getElementById("pImage").value = "";
+  document.getElementById("pDesc").value = "";
+
+  // Reset Dropdowns to first option
+  document.getElementById("pCategory").selectedIndex = 0;
+  document.getElementById("pBrand").selectedIndex = 0;
+
+  // Reset Toggle/Checkbox
+  document.getElementById("pTrending").checked = false;
+
+  // Reset UI Buttons
+  document.getElementById("btn-product-action").innerText = "Save Product";
+  document.getElementById("btn-cancel-edit").classList.add("hidden");
+}
+
+async function deleteProduct(id) {
+  if (confirm("លុបទំនិញនេះ?")) {
+    await fetch(`${API_BASE}/products/${id}`, { method: "DELETE" });
+    fetchProducts();
+  }
+}
+
+// --- USER MANAGEMENT ---
+async function fetchUsers() {
+  const res = await fetch(`${API_BASE}/auth/users`);
+  const users = await res.json();
+  document.getElementById("user-list").innerHTML = users
+    .map(
+      (u) => `
+        <tr>
+            <td>${u.name}</td>
+            <td>${u.email}</td>
+            <td>$${(u.wallet_balance || 0).toFixed(2)}</td>
+            <td class="text-end">
+                <button class="btn btn-sm btn-outline-primary" onclick="prepEditUser('${u._id}', '${u.name}', '${u.email}')"><i class="bi bi-pencil"></i></button>
+                <button class="btn btn-sm btn-outline-danger" onclick="deleteUser('${u._id}')"><i class="bi bi-trash"></i></button>
+            </td>
+        </tr>
+    `,
+    )
+    .join("");
+}
+
+function prepEditUser(id, name, email) {
+  document.getElementById("editUserId").value = id;
+  document.getElementById("editUserName").value = name;
+  document.getElementById("editUserEmail").value = email;
+  document.getElementById("userModal").classList.remove("hidden");
+}
+
+function closeUserModal() {
+  document.getElementById("userModal").classList.add("hidden");
+}
+
+async function updateUser() {
+  const id = document.getElementById("editUserId").value;
+  const name = document.getElementById("editUserName").value;
+  const email = document.getElementById("editUserEmail").value;
+  await fetch(`${API_BASE}/auth/update/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, email }),
+  });
+  closeUserModal();
+  fetchUsers();
+}
+
+async function deleteUser(id) {
+  if (confirm("លុបអ្នកប្រើប្រាស់នេះ?")) {
+    await fetch(`${API_BASE}/auth/${id}`, { method: "DELETE" });
+    fetchUsers();
+  }
+}
+
+// --- CATEGORY & BRAND ---
+async function addCategory() {
+  const name = document.getElementById("newCatName").value;
+  await fetch(`${API_BASE}/categories`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+  });
+  document.getElementById("newCatName").value = "";
+  loadCategoryTable();
+  loadDropdowns();
+}
+
+async function addBrand() {
+  const name = document.getElementById("newBrandName").value;
+  await fetch(`${API_BASE}/brands`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+  });
+  document.getElementById("newBrandName").value = "";
+  loadBrandTable();
+  loadDropdowns();
+}
+
+async function deleteItem(route, id) {
+  if (confirm("លុបវាពិតមែនទេ?")) {
+    await fetch(`${API_BASE}/${route}/${id}`, { method: "DELETE" });
+    if (route === "categories") loadCategoryTable();
+    else loadBrandTable();
+    loadDropdowns();
+  }
+}
+
+async function loadCategoryTable() {
+  const res = await fetch(`${API_BASE}/categories`);
+  const cats = await res.json();
+  document.getElementById("category-table-body").innerHTML = cats
+    .map(
+      (c) =>
+        `<tr><td>${c.name}</td><td class="text-end"><button class="btn btn-sm btn-outline-danger" onclick="deleteItem('categories', '${c._id}')">Delete</button></td></tr>`,
+    )
+    .join("");
+}
+
+async function loadBrandTable() {
+  const res = await fetch(`${API_BASE}/brands`);
+  const brands = await res.json();
+  document.getElementById("brand-table-body").innerHTML = brands
+    .map(
+      (b) =>
+        `<tr><td>${b.name}</td><td class="text-end"><button class="btn btn-sm btn-outline-danger" onclick="deleteItem('brands', '${b._id}')">Delete</button></td></tr>`,
+    )
+    .join("");
+}
+
+async function loadDropdowns() {
+  const [catRes, brandRes] = await Promise.all([
+    fetch(`${API_BASE}/categories`),
+    fetch(`${API_BASE}/brands`),
+  ]);
+  const cats = await catRes.json();
+  const brands = await brandRes.json();
+
+  document.getElementById("pCategory").innerHTML = cats
+    .map((c) => `<option value="${c._id}">${c.name}</option>`)
+    .join("");
+  document.getElementById("pFilterCategory").innerHTML =
+    '<option value="All">All Categories</option>' +
+    cats.map((c) => `<option value="${c.name}">${c.name}</option>`).join("");
+  document.getElementById("pBrand").innerHTML = brands
+    .map((b) => `<option value="${b._id}">${b.name}</option>`)
+    .join("");
+}
+
+function filterProducts() {
+  const term = document.getElementById("pSearch").value.toLowerCase();
+  const cat = document.getElementById("pFilterCategory").value;
+  const filtered = allProducts.filter((p) => {
+    const matchSearch = p.name.toLowerCase().includes(term);
+    const matchCat = cat === "All" || (p.category && p.category.name === cat);
+    return matchSearch && matchCat;
+  });
+  displayProducts(filtered);
 }

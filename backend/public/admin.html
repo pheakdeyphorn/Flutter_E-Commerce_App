@@ -13,6 +13,29 @@
       href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css"
     />
     <link rel="stylesheet" href="style.css" />
+    <style>
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+      }
+      .modal-content-custom {
+        width: 450px;
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+      }
+      .hidden {
+        display: none !important;
+      }
+    </style>
   </head>
   <body>
     <div class="sidebar d-flex flex-column p-3">
@@ -23,165 +46,43 @@
             onclick="showSection('dashboard')"
             id="nav-dashboard"
             class="nav-link active"
-            ><i class="bi bi-speedometer2 me-2"></i> Dashboard</a
+            ><i class="bi bi-speedometer2 me-2"></i> Products List</a
           >
         </li>
         <li>
           <a onclick="showSection('users')" id="nav-users" class="nav-link"
-            ><i class="bi bi-people me-2"></i> Users</a
+            ><i class="bi bi-people me-2"></i> Users Management</a
           >
         </li>
         <li>
           <a
-            onclick="showSection('products')"
-            id="nav-products"
+            onclick="showSection('add-product')"
+            id="nav-add-product"
             class="nav-link"
-            ><i class="bi bi-box-seam me-2"></i> Products</a
+            ><i class="bi bi-plus-circle me-2"></i> Add Product</a
+          >
+        </li>
+        <li>
+          <a
+            onclick="showSection('categories')"
+            id="nav-categories"
+            class="nav-link"
+            ><i class="bi bi-tags me-2"></i> Categories</a
+          >
+        </li>
+        <li>
+          <a onclick="showSection('brands')" id="nav-brands" class="nav-link"
+            ><i class="bi bi-award me-2"></i> Brands</a
           >
         </li>
       </ul>
-      <hr />
-      <div class="text-center"><small>© 2026 Pheakdey Store</small></div>
     </div>
 
     <div class="main-content">
-      <header class="d-flex justify-content-between align-items-center mb-4">
-        <h2 id="section-title">Management Dashboard</h2>
-        <span class="badge bg-success">Server: Online</span>
-      </header>
-
       <div id="section-dashboard">
-        <div class="row">
-          <div class="col-md-5 mb-4">
-            <div class="card p-4">
-              <h5 class="mb-3 text-primary">
-                <i class="bi bi-person-plus me-2"></i>Create New User
-              </h5>
-              <input
-                type="text"
-                id="uName"
-                class="form-control mb-2"
-                placeholder="Full Name"
-              />
-              <input
-                type="email"
-                id="uEmail"
-                class="form-control mb-2"
-                placeholder="Email"
-              />
-              <input
-                type="password"
-                id="uPass"
-                class="form-control mb-3"
-                placeholder="Password"
-              />
-              <button onclick="addUser()" class="btn btn-primary w-100">
-                Add User
-              </button>
-            </div>
-          </div>
-          <div class="col-md-7 mb-4">
-            <div class="card p-4">
-              <h5 class="mb-3 text-primary">
-                <i class="bi bi-plus-circle me-2"></i>Add/Edit Product
-              </h5>
-              <input type="hidden" id="pId" />
-              <div class="row">
-                <div class="col-md-8">
-                  <input
-                    type="text"
-                    id="pName"
-                    class="form-control mb-2"
-                    placeholder="Product Name"
-                  />
-                </div>
-                <div class="col-md-4">
-                  <input
-                    type="number"
-                    id="pPrice"
-                    class="form-control mb-2"
-                    placeholder="Price"
-                  />
-                </div>
-              </div>
-              <div class="row">
-                <div class="col-md-6">
-                  <select id="pCategory" class="form-select mb-2">
-                    <option value="Other">Select Category</option>
-                    <option value="Keyboard">Keyboard</option>
-                    <option value="Mice">Mice</option>
-                    <option value="Audio">Audio</option>
-                    <option value="Storage">Storage</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-                <div class="col-md-6">
-                  <input
-                    type="number"
-                    id="pStock"
-                    class="form-control mb-2"
-                    placeholder="Stock"
-                    value="10"
-                  />
-                </div>
-              </div>
-              <input
-                type="text"
-                id="pImage"
-                class="form-control mb-2"
-                placeholder="Image URL"
-              />
-              <textarea
-                id="pDesc"
-                class="form-control mb-2"
-                placeholder="Description"
-                rows="2"
-              ></textarea>
-              <div class="form-check form-switch mb-3">
-                <input
-                  class="form-check-input"
-                  type="checkbox"
-                  id="pTrending"
-                />
-                <label class="form-check-label">Mark as Trending</label>
-              </div>
-              <button
-                id="btn-product-action"
-                onclick="addProduct()"
-                class="btn btn-dark w-100"
-              >
-                Publish Product
-              </button>
-              <button
-                id="btn-cancel-edit"
-                onclick="resetProductForm()"
-                class="btn btn-link w-100 mt-2 hidden"
-              >
-                Cancel Edit
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div id="section-users" class="hidden">
-        <div class="card p-4">
-          <table class="table table-hover">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Balance</th>
-              </tr>
-            </thead>
-            <tbody id="user-list"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <div id="section-products" class="hidden">
-        <div class="card p-4">
-          <div class="row mb-3">
+        <h4>Inventory Management</h4>
+        <div class="card p-4 shadow-sm border-0">
+          <div class="row mb-3 g-2">
             <div class="col-md-6">
               <input
                 type="text"
@@ -198,27 +99,192 @@
                 onchange="filterProducts()"
               >
                 <option value="All">All Categories</option>
-                <option value="Keyboard">Keyboard</option>
-                <option value="Mice">Mice</option>
-                <option value="Audio">Audio</option>
-                <option value="Storage">Storage</option>
-                <option value="Other">Other</option>
               </select>
             </div>
           </div>
-          <table class="table table-hover align-middle">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>Image</th>
+                  <th>Name</th>
+                  <th>Brand</th>
+                  <th>Category</th>
+                  <th>Price</th>
+                  <th>Stock</th>
+                  <th class="text-end">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="product-list"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div id="section-users" class="hidden">
+        <h4>User Management</h4>
+        <div class="card p-4 shadow-sm border-0">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Wallet Balance</th>
+                  <th class="text-end">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="user-list"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div id="section-add-product" class="hidden">
+        <h4>Product Details</h4>
+        <div class="card p-4 shadow-sm border-0">
+          <input type="hidden" id="pId" />
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label>Product Name</label
+              ><input type="text" id="pName" class="form-control" />
+            </div>
+            <div class="col-md-3">
+              <label>Price ($)</label
+              ><input type="number" id="pPrice" class="form-control" />
+            </div>
+            <div class="col-md-3">
+              <label>Stock</label
+              ><input type="number" id="pStock" class="form-control" />
+            </div>
+            <div class="col-md-4">
+              <label>Category</label
+              ><select id="pCategory" class="form-select"></select>
+            </div>
+            <div class="col-md-4">
+              <label>Brand</label
+              ><select id="pBrand" class="form-select"></select>
+            </div>
+            <div class="col-md-4">
+              <label>Image URL</label
+              ><input type="text" id="pImage" class="form-control" />
+            </div>
+            <div class="col-12">
+              <label>Description</label
+              ><textarea id="pDesc" class="form-control" rows="3"></textarea>
+            </div>
+            <div class="col-12">
+              <div class="form-check form-switch">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="pTrending"
+                /><label class="form-check-label">Trending Product 🔥</label>
+              </div>
+            </div>
+          </div>
+          <div class="mt-4 d-flex gap-2">
+            <button
+              id="btn-product-action"
+              onclick="addProduct()"
+              class="btn btn-primary w-100"
+            >
+              Save Product
+            </button>
+            <button
+              id="btn-cancel-edit"
+              onclick="resetProductForm()"
+              class="btn btn-outline-secondary hidden"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="section-categories" class="hidden">
+        <h4>Category Management</h4>
+        <div class="card p-4 shadow-sm border-0">
+          <div class="row g-2 mb-3">
+            <div class="col-md-10">
+              <input
+                type="text"
+                id="newCatName"
+                class="form-control"
+                placeholder="Enter category name..."
+              />
+            </div>
+            <div class="col-md-2">
+              <button onclick="addCategory()" class="btn btn-primary w-100">
+                Add
+              </button>
+            </div>
+          </div>
+          <table class="table table-hover">
             <thead class="table-light">
               <tr>
-                <th>Image</th>
                 <th>Name</th>
-                <th>Category</th>
-                <th>Price</th>
-                <th>Stock</th>
                 <th class="text-end">Actions</th>
               </tr>
             </thead>
-            <tbody id="product-list"></tbody>
+            <tbody id="category-table-body"></tbody>
           </table>
+        </div>
+      </div>
+
+      <div id="section-brands" class="hidden">
+        <h4>Brand Management</h4>
+        <div class="card p-4 shadow-sm border-0">
+          <div class="row g-2 mb-3">
+            <div class="col-md-10">
+              <input
+                type="text"
+                id="newBrandName"
+                class="form-control"
+                placeholder="Enter brand name..."
+              />
+            </div>
+            <div class="col-md-2">
+              <button onclick="addBrand()" class="btn btn-primary w-100">
+                Add
+              </button>
+            </div>
+          </div>
+          <table class="table table-hover">
+            <thead class="table-light">
+              <tr>
+                <th>Name</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="brand-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="userModal" class="modal-overlay hidden">
+      <div class="modal-content-custom shadow">
+        <h5>Edit User Profile</h5>
+        <hr />
+        <input type="hidden" id="editUserId" />
+        <div class="mb-3">
+          <label>Full Name</label
+          ><input type="text" id="editUserName" class="form-control" />
+        </div>
+        <div class="mb-3">
+          <label>Email</label
+          ><input type="email" id="editUserEmail" class="form-control" />
+        </div>
+        <div class="d-flex gap-2">
+          <button onclick="updateUser()" class="btn btn-primary w-100">
+            Save</button
+          ><button
+            onclick="closeUserModal()"
+            class="btn btn-outline-secondary w-100"
+          >
+            Cancel
+          </button>
         </div>
       </div>
     </div>

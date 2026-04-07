@@ -13,21 +13,20 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late Future<List<Product>> _productsFuture;
-  // 1. State variables to track the selected category
-  final List<String> categories = [
-    "All",
-    "Keyboard",
-    "Mice",
-    "Audio",
-    "Storage",
-    "Other",
-  ];
+  late Future<List<dynamic>> _categoriesFuture; // សម្រាប់ទាញ Category ពី API
   String selectedCategory = "All";
 
   @override
   void initState() {
     super.initState();
-    _productsFuture = ApiService.fetchProducts();
+    _refreshData();
+  }
+
+  void _refreshData() {
+    setState(() {
+      _productsFuture = ApiService.fetchProducts();
+      _categoriesFuture = ApiService.fetchCategories();
+    });
   }
 
   @override
@@ -35,168 +34,161 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Pheakdey Store'),
-        // Note: Cart icon removed here because it is now in the bottom navigation bar
+        actions: [
+          IconButton(onPressed: _refreshData, icon: const Icon(Icons.refresh)),
+        ],
       ),
-      body: FutureBuilder<List<Product>>(
-        future: _productsFuture,
-        builder: (context, snapshot) {
+      body: FutureBuilder(
+        // ចាំឱ្យទិន្នន័យទាំងពីរមកជុំគ្នា
+        future: Future.wait([_productsFuture, _categoriesFuture]),
+        builder: (context, AsyncSnapshot<List<dynamic>> snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-
           if (snapshot.hasError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Text("Connection Error: ${snapshot.error}"),
-              ),
-            );
+            return Center(child: Text("Error: ${snapshot.error}"));
           }
 
-          if (snapshot.hasData) {
-            final allProducts = snapshot.data!;
+          final List<Product> allProducts = snapshot.data![0];
+          final List<dynamic> dynamicCategories = snapshot.data![1];
 
-            final filteredProducts = selectedCategory == "All"
-                ? allProducts
-                : allProducts
-                      .where((p) => p.category == selectedCategory)
-                      .toList();
+          // បង្កើតបញ្ជី Category List ថ្មី (ថែម "All" នៅខាងមុខ)
+          List<String> categoryNames = ["All"];
+          categoryNames.addAll(
+            dynamicCategories.map((c) => c['name'].toString()),
+          );
 
-            // 3. Split filtered data into Trending and Regular lists
-            final trendingProducts = filteredProducts
-                .where((p) => p.isTrending)
-                .toList();
-            final regularProducts = filteredProducts
-                .where((p) => !p.isTrending)
-                .toList();
+          final filteredProducts = selectedCategory == "All"
+              ? allProducts
+              : allProducts
+                    .where((p) => p.category == selectedCategory)
+                    .toList();
 
-            return SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // --- CATEGORY FILTER BAR ---
-                  SizedBox(
-                    height: 60,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      key: const PageStorageKey('categoryBar'),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 10,
-                      ),
-                      itemCount: categories.length,
-                      itemBuilder: (context, index) {
-                        final category = categories[index];
-                        final isSelected = selectedCategory == category;
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: ChoiceChip(
-                            label: Text(category),
-                            selected: isSelected,
-                            onSelected: (selected) {
-                              setState(() {
-                                selectedCategory = category;
-                              });
-                            },
-                          ),
-                        );
-                      },
+          final trendingProducts = filteredProducts
+              .where((p) => p.isTrending)
+              .toList();
+          final regularProducts = filteredProducts
+              .where((p) => !p.isTrending)
+              .toList();
+
+          return SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // --- ១. DYNAMIC CATEGORY FILTER BAR ---
+                SizedBox(
+                  height: 60,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 10,
                     ),
-                  ),
-
-                  // --- TRENDING SECTION ---
-                  if (trendingProducts.isNotEmpty) ...[
-                    const Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: Text(
-                        "Trending Now 🔥",
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
+                    itemCount: categoryNames.length,
+                    itemBuilder: (context, index) {
+                      final category = categoryNames[index];
+                      final isSelected = selectedCategory == category;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: ChoiceChip(
+                          label: Text(category),
+                          selected: isSelected,
+                          onSelected: (selected) {
+                            setState(() {
+                              selectedCategory = category;
+                            });
+                          },
                         ),
-                      ),
-                    ),
-                    SizedBox(
-                      height: 220,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        itemCount: trendingProducts.length,
-                        itemBuilder: (context, index) {
-                          final product = trendingProducts[index];
-                          return SizedBox(
-                            width: 160, // Boundary for horizontal cards
-                            child: InkWell(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        ProductDetailScreen(product: product),
-                                  ),
-                                );
-                              },
-                              child: ProductGridItem(product: product),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
+                      );
+                    },
+                  ),
+                ),
 
-                  // --- ALL PRODUCTS SECTION ---
+                // --- ២. TRENDING SECTION (FIXED OVERFLOW) ---
+                if (trendingProducts.isNotEmpty) ...[
                   const Padding(
                     padding: EdgeInsets.all(16.0),
                     child: Text(
-                      "All Products",
+                      "Trending Now 🔥",
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
-
-                  if (regularProducts.isEmpty)
-                    const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(20.0),
-                        child: Text("No products found in this category."),
-                      ),
-                    )
-                  else
-                    GridView.builder(
+                  SizedBox(
+                    height:
+                        280, // បង្កើនកម្ពស់ពី ២២០ ទៅ ២៨០ ដើម្បីកុំឱ្យ Overflow
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
                       padding: const EdgeInsets.symmetric(horizontal: 10),
-                      shrinkWrap: true, // Needed for GridView inside Column
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 10,
-                            mainAxisSpacing: 10,
-                            childAspectRatio: 0.75,
-                          ),
-                      itemCount: regularProducts.length,
+                      itemCount: trendingProducts.length,
                       itemBuilder: (context, index) {
-                        final product = regularProducts[index];
-                        return InkWell(
-                          onTap: () {
-                            Navigator.push(
+                        final product = trendingProducts[index];
+                        return Container(
+                          width: 180, // កំណត់ទំហំ Card ឱ្យសមរម្យ
+                          margin: const EdgeInsets.only(right: 10),
+                          child: InkWell(
+                            onTap: () => Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (context) =>
                                     ProductDetailScreen(product: product),
                               ),
-                            );
-                          },
-                          child: ProductGridItem(product: product),
+                            ),
+                            child: ProductGridItem(product: product),
+                          ),
                         );
                       },
                     ),
+                  ),
                 ],
-              ),
-            );
-          }
-          return const Center(child: Text("No products available"));
+
+                // --- ៣. ALL PRODUCTS SECTION ---
+                const Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Text(
+                    "All Products",
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                if (regularProducts.isEmpty)
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(20.0),
+                      child: Text("No products found."),
+                    ),
+                  )
+                else
+                  GridView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
+                      childAspectRatio:
+                          0.72, // កែសម្រួល ratio ឱ្យ Card វែងបន្តិចកុំឱ្យ Overflow ក្នុង Grid
+                    ),
+                    itemCount: regularProducts.length,
+                    itemBuilder: (context, index) {
+                      final product = regularProducts[index];
+                      return InkWell(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                ProductDetailScreen(product: product),
+                          ),
+                        ),
+                        child: ProductGridItem(product: product),
+                      );
+                    },
+                  ),
+              ],
+            ),
+          );
         },
       ),
     );

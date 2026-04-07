@@ -5,12 +5,13 @@ import '../models/product.dart';
 
 class ApiService {
   // Base URLs matching your server.js and route registrations
-  static const String productUrl = "http://10.0.2.2:5001/api/products";
-  static const String orderUrl = "http://10.0.2.2:5001/api/orders";
-  static const String authUrl = "http://10.0.2.2:5001/api/auth";
+  static const String productUrl = "http://10.0.2.2:5002/api/products";
+  static const String orderUrl = "http://10.0.2.2:5002/api/orders";
+  static const String authUrl = "http://10.0.2.2:5002/api/auth";
+  static const String categoryUrl = "http://10.0.2.2:5002/api/categories";
+  static const String brandUrl = "http://10.0.2.2:5002/api/brands";
 
   // 1. AUTHENTICATION: Login
-  // Matches your authController.loginUser logic
   static Future<Map<String, dynamic>?> login(
     String email,
     String password,
@@ -23,7 +24,6 @@ class ApiService {
       );
 
       if (response.statusCode == 200) {
-        // Returns _id, name, email, wallet_balance, and token
         return json.decode(response.body);
       } else {
         final errorData = json.decode(response.body);
@@ -37,11 +37,9 @@ class ApiService {
   }
 
   // 2. PRODUCTS: Fetch all items
-  // Maps MongoDB _id to Flutter id
   static Future<List<Product>> fetchProducts() async {
     try {
       final response = await http.get(Uri.parse(productUrl));
-
       if (response.statusCode == 200) {
         List<dynamic> body = json.decode(response.body);
         return body.map((item) => Product.fromJson(item)).toList();
@@ -69,14 +67,7 @@ class ApiService {
           "items": items,
         }),
       );
-
-      if (response.statusCode == 201) {
-        return true;
-      } else {
-        final errorData = json.decode(response.body);
-        debugPrint("Checkout Failed: ${errorData['message']}");
-        return false;
-      }
+      return response.statusCode == 201;
     } catch (err) {
       debugPrint("Checkout Connection Error: $err");
       return false;
@@ -87,15 +78,12 @@ class ApiService {
   static Future<double> getBalance(String userId) async {
     try {
       final response = await http.get(Uri.parse("$orderUrl/balance/$userId"));
-
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        // Matches the wallet_balance field in your User model
         return (data['wallet_balance'] as num).toDouble();
       }
       return 0.0;
     } catch (e) {
-      debugPrint("Balance Fetch Error: $e");
       return 0.0;
     }
   }
@@ -104,15 +92,61 @@ class ApiService {
   static Future<List<dynamic>> getUserOrders(String userId) async {
     try {
       final response = await http.get(Uri.parse("$orderUrl/user/$userId"));
+      return response.statusCode == 200 ? json.decode(response.body) : [];
+    } catch (e) {
+      return [];
+    }
+  }
 
+  // 6. ទាញយក Categories
+  static Future<List<dynamic>> fetchCategories() async {
+    try {
+      final response = await http.get(Uri.parse(categoryUrl));
+      return response.statusCode == 200 ? json.decode(response.body) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  // 7. ទាញយក Brands
+  static Future<List<dynamic>> fetchBrands() async {
+    try {
+      final response = await http.get(Uri.parse(brandUrl));
+      return response.statusCode == 200 ? json.decode(response.body) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  // ៨. PROFILE: ទាញទិន្នន័យ User ម្នាក់ៗមកបង្ហាញ
+  static Future<Map<String, dynamic>?> getUserProfile(String userId) async {
+    try {
+      final response = await http.get(Uri.parse("$authUrl/profile/$userId"));
       if (response.statusCode == 200) {
         return json.decode(response.body);
-      } else {
-        return [];
       }
+      return null;
     } catch (e) {
-      debugPrint("Order History Error: $e");
-      return [];
+      debugPrint("Error: $e");
+      return null;
+    }
+  }
+
+  // ៩. PROFILE: កែប្រែទិន្នន័យ User
+  static Future<bool> updateUserProfile(
+    String userId,
+    String name,
+    String email,
+  ) async {
+    try {
+      final response = await http.put(
+        Uri.parse("$authUrl/update/$userId"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"name": name, "email": email}),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
     }
   }
 }

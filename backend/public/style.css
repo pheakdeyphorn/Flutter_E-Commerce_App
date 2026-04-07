@@ -15,12 +15,12 @@ body {
   background: var(--sidebar-bg);
   color: white;
   position: fixed;
-  width: 240px;
+  width: 260px;
   z-index: 1000;
 }
 
 .main-content {
-  margin-left: 240px;
+  margin-left: 260px;
   padding: 30px;
 }
 
@@ -29,6 +29,7 @@ body {
   margin-bottom: 10px;
   cursor: pointer;
   transition: 0.3s;
+  border-radius: 8px;
 }
 
 .nav-link:hover {
@@ -39,21 +40,18 @@ body {
 .nav-link.active {
   background: var(--primary-color) !important;
   color: white !important;
-  border-radius: 8px;
+}
+
+.hidden {
+  display: none;
 }
 
 .card {
   border: none;
   border-radius: 15px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
-.hidden {
-  display: none !important;
-}
-
-.table img {
-  object-fit: cover;
-  border-radius: 6px;
-  border: 1px solid #ddd;
+.badge {
+  font-weight: 500;
 }

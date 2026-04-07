@@ -23,4 +23,11 @@ class UserProvider extends ChangeNotifier {
     _userEmail = null;
     notifyListeners();
   }
+
+  // ក្នុង UserProvider.dart
+  void updateUserLocal(String newName, String newEmail) {
+    _userName = newName;
+    _userEmail = newEmail;
+    notifyListeners();
+  }
 }

@@ -7,8 +7,13 @@ const productSchema = new mongoose.Schema(
     price: { type: Number, required: true },
     image_url: { type: String },
     category: {
-      type: String,
-      enum: ["Keyboard", "Mice", "Audio", "Storage", "Other"],
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Category",
+      required: true,
+    },
+    brand: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Brand",
     },
     stock_count: { type: Number, default: 10 },
     is_trending: { type: Boolean, default: false },

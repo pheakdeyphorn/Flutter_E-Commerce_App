@@ -2,10 +2,14 @@ const Product = require("../models/Product");
 
 exports.getProducts = async (req, res) => {
   try {
-    const products = await Product.find();
-    res.json(products);
-  } catch (err) {
-    res.status(500).json({ message: "Server Error", error: err.message });
+    const products = await Product.find()
+      .populate("category", "name icon_url") // ទាញយកទាំង name និង icon_url
+      .populate("brand", "name logo_url"); // ទាញយកទាំង name និង logo_url
+    res.status(200).json(products);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error fetching products", error: error.message });
   }
 };
 

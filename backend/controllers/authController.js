@@ -49,6 +49,7 @@ exports.loginUser = async (req, res) => {
         token: token,
       });
     } else {
+      console.log("error");
       res.status(401).json({ message: "Invalid email or password" });
     }
   } catch (err) {
@@ -73,5 +74,44 @@ exports.deleteProduct = async (req, res) => {
     res.status(200).json({ message: "Product deleted" });
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+};
+
+// ទាញទិន្នន័យ Profile តាមរយៈ ID
+exports.getUserProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select("-password"); // មិនយក password ទៅជាមួយទេ
+    if (user) {
+      res.json(user);
+    } else {
+      res.status(404).json({ message: "User not found" });
+    }
+  } catch (err) {
+    res.status(500).json({ message: "Server Error", error: err.message });
+  }
+};
+
+// កែប្រែទិន្នន័យ Profile
+exports.updateUserProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (user) {
+      user.name = req.body.name || user.name;
+      user.email = req.body.email || user.email;
+      // បើប្អូនចង់ឱ្យដូរ password ដែរ អាចថែម logic ត្រង់នេះ
+
+      const updatedUser = await user.save();
+      res.json({
+        _id: updatedUser._id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        wallet_balance: updatedUser.wallet_balance,
+      });
+    } else {
+      res.status(404).json({ message: "User not found" });
+    }
+  } catch (err) {
+    res.status(500).json({ message: "Server Error", error: err.message });
   }
 };

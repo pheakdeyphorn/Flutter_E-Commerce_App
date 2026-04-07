@@ -1,60 +1,69 @@
 const Order = require("../models/Order");
 const Product = require("../models/Product");
 const User = require("../models/User");
+const Payment = require("../models/Payment"); // បន្ថែមនេះ
+const Notification = require("../models/Notification"); // បន្ថែមនេះ
 const mongoose = require("mongoose");
 
 exports.processCheckout = async (req, res) => {
-  // Use a Transaction to ensure all steps succeed or all fail together
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
     const { user_id, items, total_price } = req.body;
 
-    // 1. Verify User exists and check wallet balance
+    // 1. ឆែក User និងសមតុល្យទឹកប្រាក់
     const user = await User.findById(user_id).session(session);
-    if (!user) {
-      throw new Error("User not found");
-    }
-
+    if (!user) throw new Error("User not found");
     if (user.wallet_balance < total_price) {
       throw new Error("Insufficient wallet balance. Please top up.");
     }
 
-    // 2. Validate items and update Stock
+    // 2. កាត់ស្តុកទំនិញ
     for (const item of items) {
       const product = await Product.findById(item.product_id).session(session);
-
-      if (!product) {
-        throw new Error(`Product with ID ${item.product_id} not found`);
-      }
-
+      if (!product) throw new Error(`Product ${item.product_id} not found`);
       if (product.stock_count < item.quantity) {
-        throw new Error(
-          `Not enough stock for ${product.name}. Available: ${product.stock_count}`,
-        );
+        throw new Error(`Not enough stock for ${product.name}`);
       }
-
-      // Deduct stock
       product.stock_count -= item.quantity;
       await product.save({ session });
     }
 
-    // 3. Deduct from User Wallet
+    // 3. កាត់លុយពី Wallet
     user.wallet_balance -= total_price;
     await user.save({ session });
 
-    // 4. Create and Save the Order
+    // 4. បង្កើត Order
     const newOrder = new Order({
       user_id,
-      items, // Expects array of { product_id, quantity, price }
+      items,
       total_price,
       status: "Success",
     });
-
     await newOrder.save({ session });
 
-    // Commit all changes
+    // --- ចំណុចបន្ថែមថ្មីសម្រាប់ V2 ---
+
+    // 5. បង្កើត Payment Record ស្វ័យប្រវត្តិ
+    const newPayment = new Payment({
+      order_id: newOrder._id,
+      amount: total_price,
+      payment_method: "Wallet",
+      status: "Completed",
+    });
+    await newPayment.save({ session });
+
+    // 6. បង្កើត Notification ជូនដំណឹងទៅ User
+    const newNotification = new Notification({
+      user_id: user_id,
+      title: "Order Successful",
+      message: `Your order #${newOrder._id.toString().slice(-6)} has been placed successfully!`,
+    });
+    await newNotification.save({ session });
+
+    // ----------------------------
+
     await session.commitTransaction();
     session.endSession();
 
@@ -64,7 +73,6 @@ exports.processCheckout = async (req, res) => {
       remainingBalance: user.wallet_balance,
     });
   } catch (error) {
-    // If anything fails, undo all database changes
     await session.abortTransaction();
     session.endSession();
     res.status(400).json({ message: error.message });
@@ -74,9 +82,9 @@ exports.processCheckout = async (req, res) => {
 // Fetch orders for the Profile Screen
 exports.getUserOrders = async (req, res) => {
   try {
-    const orders = await Order.find({ user_id: req.params.userId }).sort({
-      createdAt: -1,
-    }); // Newest first
+    const orders = await Order.find({ user_id: req.params.userId })
+      .populate("items.product_id")
+      .sort({ createdAt: -1 });
     res.status(200).json(orders);
   } catch (error) {
     res.status(500).json({ message: error.message });
